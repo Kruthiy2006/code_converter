@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CP AI Studio</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<div class="navbar">
+    CP AI Studio
+</div>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-left">
+        <span class="badge">AI Powered</span>
+        <h1>Convert Code.<br>Learn Deeply.</h1>
+        <p>Multi-language intelligent code transformation engine.</p>
+
+        <div class="hero-buttons">
+            <button class="primary-btn" onclick="scrollToWorkspace()">Start Converting</button>
+            <button class="secondary-btn" onclick="runDemo()">View Demo</button>
+        </div>
+    </div>
+
+    <div class="hero-right">
+        <div class="floating-card">
+            <pre id="heroCode"></pre>
+        </div>
+    </div>
+</section>
+
+<!-- FEATURE CARDS -->
+<section class="cards">
+    <div class="card">
+        <h3>Smart Syntax Mapping</h3>
+        <p>Preserves logic and structure across languages.</p>
+    </div>
+    <div class="card">
+        <h3>Learning Mode</h3>
+        <p>Step-by-step explanations and transformations.</p>
+    </div>
+    <div class="card">
+        <h3>Complexity Insights</h3>
+        <p>Time and space analysis automatically generated.</p>
+    </div>
+</section>
+
+<!-- WORKSPACE -->
+<section class="workspace" id="workspace">
+
+    <div class="top-controls">
+        <select id="source">
+            <option value="c">C</option>
+            <option value="python">Python</option>
+            <option value="java">Java</option>
+            <option value="cpp">C++</option>
+        </select>
+
+        <span class="arrow">→</span>
+
+        <select id="target">
+            <option value="python">Python</option>
+            <option value="c">C</option>
+            <option value="java">Java</option>
+            <option value="cpp">C++</option>
+        </select>
+
+        <button class="convert-btn" onclick="convertCode()">Convert</button>
+        <span id="statusText" class="status"></span>
+    </div>
+
+    <div class="editor-container">
+
+        <!-- INPUT -->
+        <div class="editor-box">
+            <h3>Input Code</h3>
+            <textarea id="codeInput" placeholder="Paste your source code here..."></textarea>
+        </div>
+
+        <!-- OUTPUT -->
+        <div class="editor-box">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab(event,'code')">Code</button>
+                <button class="tab" onclick="switchTab(event,'mapping')">Mapping</button>
+                <button class="tab" onclick="switchTab(event,'explanation')">Explanation</button>
+                <button class="tab" onclick="switchTab(event,'warnings')">Warnings</button>
+                <button class="tab" onclick="switchTab(event,'complexity')">Complexity</button>
+            </div>
+
+            <div class="tab-content active" id="code">
+                <pre id="outputCode"></pre>
+            </div>
+
+            <div class="tab-content" id="mapping">
+                <pre id="syntaxMapping"></pre>
+            </div>
+
+            <div class="tab-content" id="explanation">
+                <pre id="explanationText"></pre>
+            </div>
+
+            <div class="tab-content" id="warnings">
+                <pre id="warningsText"></pre>
+            </div>
+
+            <div class="tab-content" id="complexity">
+                <pre id="complexityText"></pre>
+            </div>
+
+            <div class="action-buttons">
+                <button onclick="copyOutput()">Copy</button>
+                <button onclick="downloadOutput()">Download</button>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<script>
+
+function scrollToWorkspace() {
+    document.getElementById("workspace").scrollIntoView({ behavior: "smooth" });
+}
+
+async function convertCode() {
+
+    const code = document.getElementById("codeInput").value;
+    const source = document.getElementById("source").value;
+    const target = document.getElementById("target").value;
+
+    const outputBox = document.getElementById("outputCode");
+    const status = document.getElementById("statusText");
+    const arrow = document.querySelector(".arrow");
+
+    // Visual feedback
+    outputBox.innerText = "🔄 Converting your code...";
+    outputBox.classList.remove("fade-in");
+    status.innerText = "AI Processing...";
+    arrow.classList.add("rotate");
+
+    const response = await fetch("/api/convert", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, source, target })
+    });
+
+    const data = await response.json();
+
+    setTimeout(() => {
+        outputBox.innerText = data.converted || "";
+        document.getElementById("syntaxMapping").innerText = data.syntax_mapping || "";
+        document.getElementById("explanationText").innerText = data.explanation || "";
+        document.getElementById("warningsText").innerText = data.warnings || "";
+        document.getElementById("complexityText").innerText = data.complexity || "";
+
+        outputBox.classList.add("fade-in");
+        status.innerText = "Conversion Complete ✓";
+        arrow.classList.remove("rotate");
+    }, 600);
+}
+
+function switchTab(event, tabName) {
+    document.querySelectorAll(".tab").forEach(btn => btn.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(tab => tab.classList.remove("active"));
+
+    document.getElementById(tabName).classList.add("active");
+    event.target.classList.add("active");
+}
+
+function copyOutput() {
+    const text = document.getElementById("outputCode").innerText;
+    navigator.clipboard.writeText(text);
+}
+
+function downloadOutput() {
+    const text = document.getElementById("outputCode").innerText;
+    const blob = new Blob([text], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "converted_code.txt";
+    a.click();
+}
+
+function runDemo() {
+    const demoCode = `#include <stdio.h>
+
+int main() {
+    for(int i=0; i<3; i++){
+        printf("Hello\\n");
+    }
+    return 0;
+}`;
+
+    document.getElementById("codeInput").value = demoCode;
+    scrollToWorkspace();
+    setTimeout(() => convertCode(), 500);
+}
+
+/* Hero typing animation */
+const heroText = `for(int i=0; i<3; i++){
+    printf("Hello");
+}`;
+let index = 0;
+
+function typeHero() {
+    if (index < heroText.length) {
+        document.getElementById("heroCode").innerText += heroText.charAt(index);
+        index++;
+        setTimeout(typeHero, 40);
+    }
+}
+typeHero();
+
+</script>
+
+</body>
+</html>
